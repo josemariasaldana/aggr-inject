@@ -1,5 +1,6 @@
 from scapy.all import sr1, sr, srp1, send, sendp, hexdump, ETH_P_IP
 from scapy.layers.inet import Raw, Ether, TCP, IP, ICMP, ARP
+# scapy dot11.py is at https://github.com/secdev/scapy/blob/cdd0609db3790ba4c7d25d33c2d23c34a49d7907/scapy/layers/dot11.py
 from scapy.layers.dot11 import Dot11, LLC, SNAP, RadioTap, Dot11Beacon, Dot11Elt, Dot11ProbeResp
 from constants import *
 from rpyutils import get_frequency, printd, Color, Level, clr, hex_offset_to_string
@@ -102,10 +103,13 @@ agg_length = sum_of_all (frame_length + frame_pad + 4 * delimiters)
 """
 # 802.11 frame class with support for adding multiple MPDUs to a single PHY frame
 class AMPDUPacket():
-    def __init__(self, recv_mac, src_mac, dst_mac, ds=0x01):
+    def __init__(self, recv_mac, src_mac, dst_mac, ds=0x01):    # 'ds' means from/to distribution system, etc
+        # the next line is the original version
         self.rt = RadioTap(len=18, present='Flags+Rate+Channel+dBm_AntSignal+Antenna', notdecoded='\x00\x6c' + get_frequency(CHANNEL) + '\xc0\x00\xc0\x01\x00\x00')
+        #self.rt = RadioTap(len=18, present='Flags+Rate+Channel+dBm_AntSignal+Antenna+MCS', notdecoded='\x00\x6c' + get_frequency(CHANNEL) + '\xc0\x00\xc0\x01\x00\x00')
         self.dot11hdr = Dot11(type="Data", subtype=DOT11_SUBTYPE_QOS_DATA, addr1=recv_mac, addr2=src_mac, addr3=dst_mac, SC=0x3060, FCfield=ds) / Raw("\x00\x00")
-        self.data = self.rt
+        self.data = self.rt  #this is a bit weird
+        #self.data = self.rt / self.dot11hdr # I have added the last part " / self.dot11hdr"
         self.num_subframes = 0
         self.recv_mac = recv_mac
         self.src_mac = src_mac
