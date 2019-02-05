@@ -6,9 +6,9 @@ from constants import *
 from rpyutils import get_frequency, printd, Color, Level, clr, hex_offset_to_string
 import random
 import crcmod
-import struct
+import struct   # see https://docs.python.org/2/library/struct.html
 import time
-
+import sys
 
 # Configuration
 DEFAULT_SOURCE_IP = '10.0.0.2'
@@ -60,6 +60,40 @@ class Dot11Packet():
     def __str__(self):
         return str(self.data[RadioTap].payload)  # RadioTap information is only useful while sending (in monitor mode).
 
+    # Higher layer packet. Add the MSDU and the CRC
+    def add_msdu(self, msdu, msdu_len=-1):
+        # Default msdu len
+        if msdu_len == -1:
+            msdu_len = len(msdu)
+
+        mpdu_len = len(self.dot11hdr) + msdu_len + 4  # mac80211 + msdu + FCS
+
+        # print the length of the padding
+        print 'MPDU length: ', mpdu_len
+
+        if mpdu_len % 4 != 0:
+            frame_padding = "\x00" * (4 - (mpdu_len % 4))  # Align to 4 octets
+            printd("Padding added: ", Level.INFO)
+            for character in str(frame_padding):        
+                print "\\x",character.encode('hex'),
+            printd("", Level.INFO)
+        else:
+            frame_padding = ""
+            printd("No padding added", Level.INFO)
+            
+        sys.stdout.flush()
+
+
+        mpdu_len <<= 4
+        crc_fun = crcmod.mkCrcFun(0b100000111, rev=True, initCrc=0x00, xorOut=0xFF)
+
+        crc = crc_fun(struct.pack('<H', mpdu_len))
+        maccrc = dot11crc(str(self.dot11hdr / msdu))
+
+        # the packet alreacy contains the 'rt' and the 'dot11hdr', so I add the other things
+        self.data = self.data / msdu / maccrc / frame_padding
+
+
     def send(self):
         return sendp(self.data, iface=MONITOR_INTERFACE, verbose=False)
 
@@ -108,8 +142,7 @@ class AMPDUPacket():
         self.rt = RadioTap(len=18, present='Flags+Rate+Channel+dBm_AntSignal+Antenna', notdecoded='\x00\x6c' + get_frequency(CHANNEL) + '\xc0\x00\xc0\x01\x00\x00')
         #self.rt = RadioTap(len=18, present='Flags+Rate+Channel+dBm_AntSignal+Antenna+MCS', notdecoded='\x00\x6c' + get_frequency(CHANNEL) + '\xc0\x00\xc0\x01\x00\x00')
         self.dot11hdr = Dot11(type="Data", subtype=DOT11_SUBTYPE_QOS_DATA, addr1=recv_mac, addr2=src_mac, addr3=dst_mac, SC=0x3060, FCfield=ds) / Raw("\x00\x00")
-        self.data = self.rt  #this is a bit weird
-        #self.data = self.rt / self.dot11hdr # I have added the last part " / self.dot11hdr"
+        self.data = self.rt  # initially I only add the Radiotap header. I will add the rest of the headers later
         self.num_subframes = 0
         self.recv_mac = recv_mac
         self.src_mac = src_mac
@@ -124,12 +157,23 @@ class AMPDUPacket():
         if msdu_len == -1:
             msdu_len = len(msdu)
 
-        mpdu_len = msdu_len + len(self.dot11hdr) + 4  # msdu + mac80211 + FCS
+        mpdu_len = len(self.dot11hdr) + msdu_len + 4  # mac80211 + msdu + FCS
+
+        # print the length of the padding
+        print 'MPDU length: ', mpdu_len
 
         if mpdu_len % 4 != 0:
-            padding = "\x00" * (4 - (mpdu_len % 4))  # Align to 4 octets
+            frame_padding = "\x00" * (4 - (mpdu_len % 4))  # Align to 4 octets
+            printd("Padding added: ", Level.INFO)
+            for character in str(frame_padding):        
+                print "\\x",character.encode('hex'),
+            printd("", Level.INFO)
         else:
-            padding = ""
+            frame_padding = ""
+            printd("No padding added", Level.INFO)
+
+        sys.stdout.flush()
+
         mpdu_len <<= 4
         crc_fun = crcmod.mkCrcFun(0b100000111, rev=True, initCrc=0x00, xorOut=0xFF)
 
@@ -139,14 +183,14 @@ class AMPDUPacket():
 
         #print('a-mpdu: len %d crc %02x delim %02x' % (mpdu_len >> 4, crc, delim_sig))
         #hexdump(maccrc)
-        ampdu_header = struct.pack('<HBB', mpdu_len, crc, delim_sig)
+        ampdu_header = struct.pack('<HBB', mpdu_len, crc, delim_sig) #'pack' returns a string containing the given values, packed according to the given format
         #hexdump(ampdu_header)
 
-        self.data = self.data / ampdu_header / self.dot11hdr / msdu / maccrc / padding
+        self.data = self.data / ampdu_header / self.dot11hdr / msdu / maccrc / frame_padding
 
         self.num_subframes += 1
 
-    def add_padding(self, times):  # Add padding delimiter
+    def add_padding(self, times):  # Add padding delimiter (an extra delimiter indicating an empty subframe)
         for i in range(0, times):
             self.data /= "\x00\x00\x20\x4e"
 
@@ -165,7 +209,7 @@ class AMPDUPacket():
 
 # ICMP Echo Request packet
 def ping_packet(seq=0, src=DEFAULT_SOURCE_IP, dst=DEFAULT_DEST_IP, length=-1):
-    icmp_packet = ICMP(seq=seq, type=8, code=0) / "XXXXXX"
+    icmp_packet = ICMP(seq=seq, type=8, code=0) / "XXXXXX"  # The "XXXXXX" is the payload of the ICMP
     icmp_packet = ICMP(icmp_packet.do_build())  # Force checksum calculation
 
     icmp_length = length

