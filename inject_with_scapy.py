@@ -1,5 +1,7 @@
 #!/usr/bin/env python2
 
+# NOTE: the packet is not generated. the radiotap is missing
+
 # examples from https://wlan1nde.wordpress.com/2016/06/28/using-scapy-to-send-wlan-frames/
 import time
 
@@ -14,7 +16,6 @@ class Dot11EltRates(Packet):
     for index, rate in enumerate(supported_rates):
         fields_desc.append(ByteField("supported_rate{0}".format(index + 1),
                                      rate))
-
 packet = Dot11(
     addr1="00:a0:57:98:76:54",
     addr2="00:a0:57:12:34:56",
@@ -26,7 +27,5 @@ packet /= Dot11EltRates()
 for i in range(1, 100):
 	sendp(packet, iface="wlan1")	#the interface has to be in monitor mode
 	time.sleep(0.1)
-
-# the packet is not generated. the radiotap is missing
 
 packet.show()

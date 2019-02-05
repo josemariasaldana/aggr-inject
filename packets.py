@@ -1,7 +1,8 @@
 from scapy.all import sr1, sr, srp1, send, sendp, hexdump, ETH_P_IP
 from scapy.layers.inet import Raw, Ether, TCP, IP, ICMP, ARP
 # scapy dot11.py is at https://github.com/secdev/scapy/blob/cdd0609db3790ba4c7d25d33c2d23c34a49d7907/scapy/layers/dot11.py
-from scapy.layers.dot11 import Dot11, LLC, SNAP, RadioTap, Dot11Beacon, Dot11Elt, Dot11ProbeResp
+#from scapy.layers.dot11 import Dot11, LLC, SNAP, RadioTap, Dot11Beacon, Dot11Elt, Dot11ProbeResp
+from scapy.layers.dot11 import *
 from constants import *
 from rpyutils import get_frequency, printd, Color, Level, clr, hex_offset_to_string
 import random
@@ -16,7 +17,7 @@ DEFAULT_DEST_IP = '10.0.0.1'
 DEFAULT_SOURCE_MAC = 'ff:ff:ff:ff:ff:ff'
 DEFAULT_DEST_MAC = 'ff:ff:ff:ff:ff:ff'
 CHANNEL = 1
-MONITOR_INTERFACE = 'mon0'
+MONITOR_INTERFACE = 'mon1'
 
 
 # 802.11 MAC CRC
@@ -75,7 +76,7 @@ class Dot11Packet():
             frame_padding = "\x00" * (4 - (mpdu_len % 4))  # Align to 4 octets
             printd("Padding added: ", Level.INFO)
             for character in str(frame_padding):        
-                print "\\x",character.encode('hex'),
+                #print "\\x",character.encode('hex'),   #does not work in python3
             printd("", Level.INFO)
         else:
             frame_padding = ""
@@ -166,7 +167,7 @@ class AMPDUPacket():
             frame_padding = "\x00" * (4 - (mpdu_len % 4))  # Align to 4 octets
             printd("Padding added: ", Level.INFO)
             for character in str(frame_padding):        
-                print "\\x",character.encode('hex'),
+                #print "\\x",character.encode('hex'),   #does not work in python3
             printd("", Level.INFO)
         else:
             frame_padding = ""

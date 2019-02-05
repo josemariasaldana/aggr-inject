@@ -64,10 +64,10 @@ def main():
         #sys.stdout.flush()
         hexdump.hexdump(str(pkt.rt))
 
-        for character in str(pkt.rt):
+        #for character in str(pkt.rt):
           # this prints "\x 00 \x 00 \x 12 \x 00 \x 2e \x 08 \x 00 \x 00 \x 00 \x 6c \x 6c \x 09 \x c0 \x 00 \x c0 \x 01 \x 00 \x 00 "  
-          print "\\x",character.encode('hex'),
-          sys.stdout.flush()
+          #print '\\x',character.encode('hex'),
+        sys.stdout.flush()
         printd("", Level.INFO) #print a linefeed
 
         printd(clr(Color.YELLOW, "802.11 hdr:"), Level.INFO)
@@ -87,9 +87,9 @@ def main():
         hexdump.hexdump(str(pkt.data))
         sys.stdout.flush()
 
-        for character in str(pkt.data):
+        #for character in str(pkt.data):
               # this prints "\x 80 \x 04 \x bb \x 4e \x 88 \x 02 \x 00 \x 00 \x ff \x ff \x ff \x ff \x ff \x ff \x 64 "
-            print "\\x",character.encode('hex'),
+            #print "\\x",character.encode('hex'),    #does not work in python3
             #print character, character.encode('hex'),
         printd("", Level.INFO) #print a linefeed
 
@@ -116,7 +116,7 @@ def main_amsdu():
 
     for character in str(amsdu_pkt.rt):
       # this prints "\x 00 \x 00 \x 12 \x 00 \x 2e \x 08 \x 00 \x 00 \x 00 \x 6c \x 6c \x 09 \x c0 \x 00 \x c0 \x 01 \x 00 \x 00 "  
-      print "\\x",character.encode('hex'),
+      print "\\x",character.encode('hex'),   #does not work in python3
       sys.stdout.flush()
     printd("", Level.INFO) #print a linefeed
 
@@ -139,7 +139,7 @@ def main_amsdu():
 
     for character in str(amsdu_pkt.data):
     	  # this prints "\x 80 \x 04 \x bb \x 4e \x 88 \x 02 \x 00 \x 00 \x ff \x ff \x ff \x ff \x ff \x ff \x 64 "
-        print "\\x",character.encode('hex'),
+        print "\\x",character.encode('hex'),   #does not work in python3
         #print character, character.encode('hex'),
     printd("", Level.INFO) #print a linefeed
 
@@ -175,7 +175,7 @@ def main_ampdu():
 
         for character in str(ampdu_pkt.rt):
           # this prints "\x 00 \x 00 \x 12 \x 00 \x 2e \x 08 \x 00 \x 00 \x 00 \x 6c \x 6c \x 09 \x c0 \x 00 \x c0 \x 01 \x 00 \x 00 "  
-          print "\\x",character.encode('hex'),
+          print "\\x",character.encode('hex'),   #does not work in python3
           sys.stdout.flush()
         printd("", Level.INFO) #print a linefeed
 
@@ -218,8 +218,8 @@ def main_ampdu():
     sys.stdout.flush()
 
     for character in container:
-    	  # this prints "\x 80 \x 04 \x bb \x 4e \x 88 \x 02 \x 00 \x 00 \x ff \x ff \x ff \x ff \x ff \x ff \x 64 "
-        print "\\x",character.encode('hex'),
+    	# this prints "\x 80 \x 04 \x bb \x 4e \x 88 \x 02 \x 00 \x 00 \x ff \x ff \x ff \x ff \x ff \x ff \x 64 "
+        print "\\x",character.encode('hex'),   #does not work in python3
         #print character, character.encode('hex'),
 
     printd("", Level.INFO) #print a linefeed
