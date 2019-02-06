@@ -76,7 +76,7 @@ class Dot11Packet():
             frame_padding = "\x00" * (4 - (mpdu_len % 4))  # Align to 4 octets
             printd("Padding added: ", Level.INFO)
             for character in str(frame_padding):        
-                #print "\\x",character.encode('hex'),   #does not work in python3
+                print "\\x",character.encode('hex'),
             printd("", Level.INFO)
         else:
             frame_padding = ""
@@ -167,7 +167,7 @@ class AMPDUPacket():
             frame_padding = "\x00" * (4 - (mpdu_len % 4))  # Align to 4 octets
             printd("Padding added: ", Level.INFO)
             for character in str(frame_padding):        
-                #print "\\x",character.encode('hex'),   #does not work in python3
+                print "\\x",character.encode('hex'),
             printd("", Level.INFO)
         else:
             frame_padding = ""
